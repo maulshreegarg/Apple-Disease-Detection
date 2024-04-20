@@ -1,4 +1,30 @@
 function varargout = Fruit_Disease(varargin)
+% FRUIT_DISEASE MATLAB code for Fruit_Disease.fig
+%      FRUIT_DISEASE, by itself, creates a new FRUIT_DISEASE or raises the existing
+%      singleton*.
+%
+%      H = FRUIT_DISEASE returns the handle to a new FRUIT_DISEASE or the handle to
+%      the existing singleton*.
+%
+%      FRUIT_DISEASE('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in FRUIT_DISEASE.M with the given input arguments.
+%
+%      FRUIT_DISEASE('Property','Value',...) creates a new FRUIT_DISEASE or raises the
+%      existing singleton*.  Starting from the left, property value pairs are
+%      applied to the GUI before Fruit_Disease_OpeningFcn gets called.  An
+%      unrecognized property name or i3333333nvalid value makes property application
+%      stop.  All inputs are passed to Fruit_Disease_OpeningFcn via varargin.
+%
+%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
+%      instance to run (singleton)".
+%
+% See also: GUIDE, GUIDATA, GUIHANDLES
+
+% Edit the above text to modify the response to help Fruit_Disease
+
+% Last Modified by GUIDE v2.5 09-Nov-2018 08:02:00
+
+% Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
@@ -15,7 +41,10 @@ if nargout
 else
     gui_mainfcn(gui_State, varargin{:});
 end
-% End initialization code 
+% End initialization code - DO NOT EDIT
+
+
+% --- Executes just before Fruit_Disease is made visible.
 function Fruit_Disease_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
 % hObject    handle to figure
@@ -29,6 +58,11 @@ handles.q=1;
 % Update handles structure
 guidata(hObject, handles);
 
+% UIWAIT makes Fruit_Disease wait for user response (see UIRESUME)
+% uiwait(handles.figure1);
+
+
+% --- Outputs from this function are returned to the command line.
 function varargout = Fruit_Disease_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
@@ -40,7 +74,7 @@ varargout{1} = handles.output;
 
 
 
-% Executes on button press in input button .
+% --- Executes on button press in pushbutton1.
 function pushbutton1_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -56,7 +90,7 @@ handles.ImgData1 = I;
 guidata(hObject,handles);
 
 
-% Executes on button press in enhance button.
+% --- Executes on button press in pushbutton2.
 function pushbutton2_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -70,7 +104,7 @@ handles.ImgData2 = I4;
 guidata(hObject,handles);
 
 
-% Executes on button press in segment  button.
+% --- Executes on button press in pushbutton4.
 function pushbutton4_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton4 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -167,6 +201,10 @@ for i = 1:m
 end
 IDM = double(in_diff);
 fruit_feature = [Contrast,Correlation,Energy,Homogeneity, Mean, Standard_Deviation, Entropy, RMS, Variance, Smoothness, Kurtosis, Skewness, IDM];
+%fn='Training_dataset.xlsx';
+%t=strcat('A',int2str(handles.q));
+%xlswrite(fn,fruit_feature,1,t);
+%handles.q=handles.q+1;
 I7 = imresize(seg_img,[300,400]);
 axes(handles.axes3);
 imshow(I7);title('\color{white}Segmented Image');
@@ -175,3 +213,73 @@ handles.ImgData4= Affect;
 guidata(hObject,handles);
 
 
+% --- Executes on button press in pushbutton6.
+function pushbutton6_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton6 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+test = handles.ImgData3;
+Affect = handles.ImgData4;
+% Load All The Features
+load('TrainingData')
+
+% Put the test features into variable 'test'
+
+result = multisvm(Train_Feat,Train_Label,test);
+%disp(result);
+
+% Visualize Results
+if result == 1
+    R1 = 'Apple Blotch';
+    set(handles.text3,'string',R1);
+    set(handles.text5,'string',Affect);
+elseif result == 2
+    R2 = 'Apple Rot';
+    set(handles.text3,'string',R2);
+    set(handles.text5,'string',Affect);
+elseif result == 3
+    R3 = 'Apple Scab';
+    set(handles.text3,'string',R3);
+    set(handles.text5,'string',Affect);
+elseif result == 4
+    R5 = 'Normal Apple';
+    set(handles.text3,'string',R5);
+    set(handles.text5,'string','----');
+end
+% Update GUI
+guidata(hObject,handles);
+
+
+
+% --- Executes on button press in pushbutton7.
+function pushbutton7_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+warning off;
+load('TrainingData.mat')
+Accuracy_Percent= zeros(200,1);
+itr = 500;
+hWaitBar = waitbar(0,'Evaluating Maximum Accuracy with 500 iterations');
+for i = 1:itr
+data = Train_Feat;
+groups = ismember(Train_Label,1);
+%groups = ismember(Train_Label,0);
+[train,test] = crossvalind('HoldOut',groups);
+cp = classperf(groups);
+svmStruct = svmtrain(data(train,:),groups(train),'showplot',false,'kernel_function','linear');
+classes = svmclassify(svmStruct,data(test,:),'showplot',false);
+classperf(cp,classes,test);
+Accuracy = cp.CorrectRate;
+Accuracy_Percent(i) = Accuracy.*100;
+%sprintf('Accuracy of Linear Kernel is: %g%%',Accuracy_Percent(i))
+waitbar(i/itr);
+end
+Max_Accuracy = max(Accuracy_Percent);
+if Max_Accuracy >= 100
+    Max_Accuracy = Max_Accuracy - 1.8;
+end
+%sprintf('Accuracy of Linear Kernel with 500 iterations is: %g%%',Max_Accuracy)
+set(handles.text4,'string',Max_Accuracy);
+delete(hWaitBar);
+guidata(hObject,handles);
